@@ -1,0 +1,15 @@
+{
+  "name": "bilagsboks-app",
+  "version": "1.0.0",
+  "description": "Kvitteringsapp som sender kvitteringer med bilde til regnskap.",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "nodemailer": "^10.0.10"
+  }
+}

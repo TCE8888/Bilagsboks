@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bilagsboks</title>
+<meta name="description" content="Ta bilde av kvitteringer, velg avdeling og send rett til regnskap.">
+<meta name="theme-color" content="#2f6f5e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bilagsboks">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="icon" href="/icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f4ee;
+    --surface: #ffffff;
+    --surface-sunken: #efece3;
+    --ink: #1d2420;
+    --muted: #6c756e;
+    --line: #e2ddd0;
+    --accent: #2f6f5e;
+    --accent-strong: #1d4c40;
+    --accent-tint: #e4efe9;
+    --warn: #a8541f;
+    --warn-tint: #f5e7db;
+    --shadow: 0 1px 2px rgba(29,36,32,0.06), 0 6px 16px rgba(29,36,32,0.06);
+    --radius: 14px;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141a17;
+      --surface: #1c2420;
+      --surface-sunken: #222b26;
+      --ink: #eceae3;
+      --muted: #98a39a;
+      --line: #2c3833;
+      --accent: #58ab92;
+      --accent-strong: #7fc4ab;
+      --accent-tint: #22332c;
+      --warn: #e2a273;
+      --warn-tint: #35291f;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px rgba(0,0,0,0.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  [hidden] { display: none !important; }
+  img { max-width: 100%; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  header {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand-mark {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    color: var(--accent-strong);
+    background: var(--accent-tint);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 2px 6px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .icon-btn {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 17px;
+    flex: none;
+  }
+  .icon-btn:active { transform: translateY(1px); }
+
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 18px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .field-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .shot-card { border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+  .shot-frame {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    max-height: 46vh;
+    background: repeating-linear-gradient(45deg, var(--surface-sunken) 0 10px, var(--surface) 10px 20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shot-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .shot-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--muted); padding: 20px; text-align: center; }
+  .shot-empty svg { width: 44px; height: 44px; stroke: var(--muted); }
+  .shot-empty strong { color: var(--ink); font-size: 15px; font-weight: 600; }
+  .shot-empty span { font-size: 13px; max-width: 26ch; }
+  .shot-actions { display: flex; gap: 1px; background: var(--line); }
+  .shot-actions button, .shot-actions label {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--surface); border: none; padding: 13px 8px;
+    font-family: "IBM Plex Sans", sans-serif; font-weight: 600; font-size: 14px;
+    color: var(--accent-strong); cursor: pointer;
+  }
+  .shot-actions button:active, .shot-actions label:active { background: var(--accent-tint); }
+  input[type="file"] { display: none; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    font-family: "IBM Plex Sans", sans-serif; font-size: 14px; font-weight: 500;
+    padding: 9px 14px; border-radius: 999px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .input-wrap { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 11px 13px; }
+  .input-wrap:focus-within { border-color: var(--accent); }
+  .input-wrap input, .input-wrap textarea {
+    border: none; outline: none; background: transparent; color: var(--ink);
+    font-family: "IBM Plex Sans", sans-serif; font-size: 15px; width: 100%;
+  }
+  .input-wrap textarea { resize: none; }
+  .amount-wrap { display: flex; align-items: center; gap: 6px; }
+  .amount-wrap span { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+  .amount-wrap input { font-variant-numeric: tabular-nums; }
+
+  .receipt-note {
+    border-radius: var(--radius); border: 1px dashed var(--line); padding: 12px 14px;
+    font-size: 13px; color: var(--muted); display: flex; gap: 10px; align-items: flex-start;
+  }
+  .receipt-note svg { flex: none; width: 16px; height: 16px; stroke: var(--muted); margin-top: 2px; }
+
+  footer { position: sticky; bottom: 0; padding: 12px 18px calc(14px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--bg) 60%, transparent); }
+  .send-btn {
+    max-width: 480px; margin: 0 auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 15px;
+    font-family: "IBM Plex Sans", sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .send-btn:disabled { background: var(--surface-sunken); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+  .send-btn:not(:disabled):active { background: var(--accent-strong); }
+  .send-btn svg { width: 18px; height: 18px; }
+  .send-btn .spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+    animation: spin 0.7s linear infinite; flex: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 8px);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 30; max-width: 80vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(20,26,23,0.45); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { background: var(--bg); width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px)); max-height: 85vh; overflow-y: auto; box-shadow: 0 -8px 30px rgba(0,0,0,0.25); }
+  .sheet h2 { font-size: 16px; margin: 0 0 4px; }
+  .sheet p.hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .sheet-section { margin-bottom: 20px; }
+  .sheet-section:last-of-type { margin-bottom: 8px; }
+  .dept-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .dept-item { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 8px 14px; }
+  .dept-item span { flex: 1; font-size: 14px; }
+  .dept-item button { appearance: none; border: none; background: transparent; color: var(--warn); font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 8px; }
+  .add-dept-row { display: flex; gap: 8px; }
+  .add-dept-row .input-wrap { flex: 1; }
+  .add-dept-row button { background: var(--accent-tint); color: var(--accent-strong); border: 1px solid var(--accent); border-radius: 10px; padding: 0 16px; font-weight: 600; cursor: pointer; }
+  .sheet-close { width: 100%; background: var(--ink); color: var(--bg); border: none; border-radius: 12px; padding: 13px; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 4px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Bilagsboks</h1>
+    <span class="brand-mark">TC</span>
+  </div>
+  <button class="icon-btn" id="settingsBtn" aria-label="Innstillinger" title="Innstillinger">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+  </button>
+</header>
+
+<main>
+  <section>
+    <span class="field-label">Kvittering</span>
+    <div class="shot-card">
+      <div class="shot-frame" id="shotFrame">
+        <div class="shot-empty" id="shotEmpty">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          <strong>Ingen kvittering ennå</strong>
+          <span>Ta et bilde av kvitteringen, eller velg et bilde fra kamerarullen</span>
+        </div>
+        <img id="shotImg" alt="Kvitteringsbilde" hidden>
+      </div>
+      <div class="shot-actions">
+        <label for="cameraInput">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          <span id="cameraLabel">Ta bilde</span>
+        </label>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment">
+        <label for="libraryInput">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
+          Fra bibliotek
+        </label>
+        <input type="file" id="libraryInput" accept="image/*">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="field-label">Avdeling</span>
+    <div class="chip-row" id="deptRow"></div>
+  </section>
+
+  <section class="row2">
+    <div>
+      <span class="field-label">Beløp</span>
+      <div class="input-wrap amount-wrap">
+        <input type="number" inputmode="decimal" id="amountInput" placeholder="0,00">
+        <span>kr</span>
+      </div>
+    </div>
+    <div>
+      <span class="field-label">Dato</span>
+      <div class="input-wrap">
+        <input type="date" id="dateInput" class="mono">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="field-label">Notat <span style="text-transform:none;font-weight:400;">(valgfritt)</span></span>
+    <div class="input-wrap">
+      <textarea id="noteInput" rows="2" placeholder="F.eks. formål eller leverandør"></textarea>
+    </div>
+  </section>
+
+  <div class="receipt-note" id="shareHint">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+    <span id="shareHintText">Kvitteringen sendes automatisk med bildet vedlagt — ingen e-post-app trengs.</span>
+  </div>
+</main>
+
+<footer>
+  <button class="send-btn" id="sendBtn" disabled>
+    <svg id="sendIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    <span id="sendLabel">Send til regnskap</span>
+  </button>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var DEFAULTS = {
+    email: "",
+    departments: ["Salg", "Drift", "Marked", "Administrasjon", "IT"],
+    secret: ""
+  };
+
+  function loadSettings() {
+    try {
+      var raw = localStorage.getItem("bilagsboks.settings");
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        return {
+          email: typeof parsed.email === "string" ? parsed.email : DEFAULTS.email,
+          departments: Array.isArray(parsed.departments) && parsed.departments.length ? parsed.departments : DEFAULTS.departments.slice(),
+          secret: typeof parsed.secret === "string" ? parsed.secret : DEFAULTS.secret
+        };
+      }
+    } catch (e) {}
+    return { email: DEFAULTS.email, departments: DEFAULTS.departments.slice(), secret: DEFAULTS.secret };
+  }
+
+  function saveSettings(s) {
+    try { localStorage.setItem("bilagsboks.settings", JSON.stringify(s)); } catch (e) {}
+  }
+
+  var settings = loadSettings();
+  var state = { file: null, dept: settings.departments[0] || null };
+
+  var shotEmpty = document.getElementById("shotEmpty");
+  var shotImg = document.getElementById("shotImg");
+  var cameraInput = document.getElementById("cameraInput");
+  var libraryInput = document.getElementById("libraryInput");
+  var deptRow = document.getElementById("deptRow");
+  var amountInput = document.getElementById("amountInput");
+  var dateInput = document.getElementById("dateInput");
+  var noteInput = document.getElementById("noteInput");
+  var sendBtn = document.getElementById("sendBtn");
+  var sendLabel = document.getElementById("sendLabel");
+  var sendIcon = document.getElementById("sendIcon");
+  var toast = document.getElementById("toast");
+  var settingsBtn = document.getElementById("settingsBtn");
+
+  (function () {
+    var d = new Date();
+    var iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    dateInput.value = iso;
+  })();
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () { toast.classList.remove("show"); }, 3200);
+  }
+
+  function renderChips() {
+    deptRow.innerHTML = "";
+    settings.departments.forEach(function (name) {
+      var btn = document.createElement("button");
+      btn.className = "chip";
+      btn.type = "button";
+      btn.textContent = name;
+      btn.setAttribute("aria-pressed", state.dept === name ? "true" : "false");
+      btn.addEventListener("click", function () {
+        state.dept = name;
+        renderChips();
+        updateSendState();
+      });
+      deptRow.appendChild(btn);
+    });
+  }
+
+  function updateSendState() {
+    sendBtn.disabled = !(state.file && state.dept);
+  }
+
+  // Kompatibel bildekomprimering: prøv å skalere ned via canvas for å holde
+  // filstørrelsen nede, men gi ALDRI opp for godt — en timeout sikrer at vi
+  // uansett fortsetter med originalfilen om noe skulle henge seg opp.
+  function compressImage(file, maxDim, quality, timeoutMs) {
+    return new Promise(function (resolve) {
+      var settled = false;
+      var done = function (result) {
+        if (settled) return;
+        settled = true;
+        resolve(result);
+      };
+      var timer = setTimeout(function () { done(file); }, timeoutMs);
+      try {
+        var objUrl = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          try {
+            var w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+            var scale = Math.min(1, maxDim / Math.max(w, h));
+            var cw = Math.max(1, Math.round(w * scale));
+            var ch = Math.max(1, Math.round(h * scale));
+            var canvas = document.createElement("canvas");
+            canvas.width = cw;
+            canvas.height = ch;
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, cw, ch);
+            URL.revokeObjectURL(objUrl);
+            canvas.toBlob(function (blob) {
+              clearTimeout(timer);
+              if (blob) {
+                done(new File([blob], "kvittering.jpg", { type: "image/jpeg" }));
+              } else {
+                done(file);
+              }
+            }, "image/jpeg", quality);
+          } catch (e) {
+            clearTimeout(timer);
+            done(file);
+          }
+        };
+        img.onerror = function () {
+          clearTimeout(timer);
+          URL.revokeObjectURL(objUrl);
+          done(file);
+        };
+        img.src = objUrl;
+      } catch (e) {
+        clearTimeout(timer);
+        done(file);
+      }
+    });
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var result = reader.result || "";
+        var comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleFile(fileList) {
+    var f = fileList && fileList[0];
+    if (!f) return;
+    state.file = f;
+    var url = URL.createObjectURL(f);
+    shotImg.src = url;
+    shotImg.hidden = false;
+    shotEmpty.hidden = true;
+    document.getElementById("cameraLabel").textContent = "Ta nytt bilde";
+    updateSendState();
+  }
+
+  cameraInput.addEventListener("change", function () { handleFile(this.files); });
+  libraryInput.addEventListener("change", function () { handleFile(this.files); });
+  amountInput.addEventListener("input", updateSendState);
+
+  function formatAmount() {
+    var v = amountInput.value;
+    if (!v) return "";
+    var n = parseFloat(v.replace(",", "."));
+    if (isNaN(n)) return v;
+    return n.toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kr";
+  }
+
+  function buildMessage() {
+    var lines = [];
+    lines.push("Kvittering – " + (state.dept || "ukjent avdeling"));
+    lines.push("Dato: " + (dateInput.value || "–"));
+    if (amountInput.value) lines.push("Beløp: " + formatAmount());
+    if (noteInput.value.trim()) lines.push("Notat: " + noteInput.value.trim());
+    lines.push("");
+    lines.push("Sendt fra Bilagsboks");
+    return lines.join("\n");
+  }
+
+  function buildSubject() {
+    return "Kvittering – " + (state.dept || "") + (dateInput.value ? " – " + dateInput.value : "");
+  }
+
+  function setSending(isSending) {
+    sendBtn.disabled = isSending || !(state.file && state.dept);
+    sendIcon.style.display = isSending ? "none" : "";
+    var spinner = document.getElementById("sendSpinner");
+    if (isSending && !spinner) {
+      spinner = document.createElement("span");
+      spinner.id = "sendSpinner";
+      spinner.className = "spinner";
+      sendBtn.insertBefore(spinner, sendLabel);
+    }
+    if (spinner) spinner.style.display = isSending ? "" : "none";
+    sendLabel.textContent = isSending ? "Sender …" : "Send til regnskap";
+  }
+
+  async function send() {
+    if (!state.file || !state.dept) return;
+    if (!settings.email) {
+      showToast("Legg inn e-postadressen til regnskap under innstillinger ⚙ først.");
+      return;
+    }
+    setSending(true);
+    try {
+      var compressed = await compressImage(state.file, 1600, 0.78, 6000);
+      var base64 = await fileToBase64(compressed);
+      var res = await fetch("/api/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-secret": settings.secret || ""
+        },
+        body: JSON.stringify({
+          to: settings.email,
+          subject: buildSubject(),
+          text: buildMessage(),
+          imageBase64: base64,
+          imageType: compressed.type || "image/jpeg",
+          imageName: compressed.name || "kvittering.jpg"
+        })
+      });
+      if (res.ok) {
+        showToast("Sendt til regnskap — bildet var med.");
+        resetForm();
+      } else {
+        var data = await res.json().catch(function () { return {}; });
+        if (res.status === 401) {
+          showToast("Feil nøkkel — sjekk innstillinger ⚙.");
+        } else {
+          showToast("Kunne ikke sende (" + (data.error || res.status) + "). Prøv igjen.");
+        }
+      }
+    } catch (e) {
+      showToast("Ingen kontakt med tjenesten. Sjekk internett og prøv igjen.");
+    } finally {
+      setSending(false);
+      updateSendState();
+    }
+  }
+
+  function resetForm() {
+    state.file = null;
+    shotImg.hidden = true;
+    shotImg.src = "";
+    shotEmpty.hidden = false;
+    document.getElementById("cameraLabel").textContent = "Ta bilde";
+    amountInput.value = "";
+    noteInput.value = "";
+    updateSendState();
+  }
+
+  sendBtn.addEventListener("click", send);
+
+  settingsBtn.addEventListener("click", openSettings);
+
+  function openSettings() {
+    var backdrop = document.createElement("div");
+    backdrop.className = "sheet-backdrop";
+    backdrop.innerHTML =
+      '<div class="sheet" role="dialog" aria-label="Innstillinger">' +
+        '<div class="sheet-section">' +
+          '<h2>E-post til regnskap</h2>' +
+          '<p class="hint">Adressen fylles inn automatisk når kvitteringen sendes.</p>' +
+          '<div class="input-wrap"><input type="email" id="emailSetting" placeholder="regnskap@firma.no"></div>' +
+        '</div>' +
+        '<div class="sheet-section">' +
+          '<h2>Avdelinger</h2>' +
+          '<p class="hint">Legg til eller fjern avdelinger du velger mellom.</p>' +
+          '<div class="dept-list" id="deptList"></div>' +
+          '<div class="add-dept-row">' +
+            '<div class="input-wrap"><input type="text" id="newDept" placeholder="Ny avdeling"></div>' +
+            '<button type="button" id="addDeptBtn">Legg til</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sheet-section">' +
+          '<h2>Nøkkel</h2>' +
+          '<p class="hint">Samme nøkkel som du satte opp i Vercel (APP_SECRET).</p>' +
+          '<div class="input-wrap"><input type="text" id="secretSetting" placeholder="Nøkkel" autocapitalize="off" autocorrect="off"></div>' +
+        '</div>' +
+        '<button class="sheet-close" id="closeSettings">Ferdig</button>' +
+      '</div>';
+    document.body.appendChild(backdrop);
+
+    var emailSetting = backdrop.querySelector("#emailSetting");
+    emailSetting.value = settings.email;
+    var secretSetting = backdrop.querySelector("#secretSetting");
+    secretSetting.value = settings.secret;
+
+    var deptList = backdrop.querySelector("#deptList");
+    function renderDeptList() {
+      deptList.innerHTML = "";
+      settings.departments.forEach(function (name, idx) {
+        var item = document.createElement("div");
+        item.className = "dept-item";
+        var span = document.createElement("span");
+        span.textContent = name;
+        var del = document.createElement("button");
+        del.type = "button";
+        del.textContent = "Fjern";
+        del.addEventListener("click", function () {
+          settings.departments.splice(idx, 1);
+          if (state.dept === name) state.dept = settings.departments[0] || null;
+          renderDeptList();
+        });
+        item.appendChild(span);
+        item.appendChild(del);
+        deptList.appendChild(item);
+      });
+    }
+    renderDeptList();
+
+    backdrop.querySelector("#addDeptBtn").addEventListener("click", function () {
+      var input = backdrop.querySelector("#newDept");
+      var val = input.value.trim();
+      if (!val) return;
+      if (settings.departments.indexOf(val) === -1) settings.departments.push(val);
+      input.value = "";
+      renderDeptList();
+    });
+
+    function closeAndSave() {
+      settings.email = emailSetting.value.trim();
+      settings.secret = secretSetting.value.trim();
+      if (!settings.departments.length) settings.departments = DEFAULTS.departments.slice();
+      if (!state.dept) state.dept = settings.departments[0];
+      saveSettings(settings);
+      renderChips();
+      updateSendState();
+      document.body.removeChild(backdrop);
+      showToast("Lagret.");
+    }
+
+    backdrop.querySelector("#closeSettings").addEventListener("click", closeAndSave);
+    backdrop.addEventListener("click", function (e) {
+      if (e.target === backdrop) closeAndSave();
+    });
+  }
+
+  renderChips();
+  updateSendState();
+
+  if (!settings.email || !settings.secret) {
+    setTimeout(function () {
+      showToast("Fullfør oppsettet under innstillinger ⚙ (e-post og nøkkel).");
+    }, 600);
+  }
+
+  if ("serviceWorker" in navigator) {
+    // Ingen service worker registrert ennå — siden fungerer fint uten,
+    // men lar plassen stå åpen for offline-støtte senere.
+  }
+})();
+</script>
+</body>
+</html>
