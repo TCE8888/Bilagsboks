@@ -172,6 +172,11 @@
   .amount-wrap { display: flex; align-items: center; gap: 6px; }
   .amount-wrap span { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 13px; }
   .amount-wrap input { font-variant-numeric: tabular-nums; }
+  .amount-wrap .ocr-spinner {
+    width: 13px; height: 13px; border-radius: 50%; flex: none;
+    border: 2px solid var(--line); border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite;
+  }
 
   .receipt-note {
     border-radius: var(--radius); border: 1px dashed var(--line); padding: 12px 14px;
@@ -268,7 +273,7 @@
   <section class="row2">
     <div>
       <span class="field-label">Beløp</span>
-      <div class="input-wrap amount-wrap">
+      <div class="input-wrap amount-wrap" id="amountWrap">
         <input type="number" inputmode="decimal" id="amountInput" placeholder="0,00">
         <span>kr</span>
       </div>
@@ -339,6 +344,7 @@
   var libraryInput = document.getElementById("libraryInput");
   var deptRow = document.getElementById("deptRow");
   var amountInput = document.getElementById("amountInput");
+  var amountWrap = document.getElementById("amountWrap");
   var dateInput = document.getElementById("dateInput");
   var noteInput = document.getElementById("noteInput");
   var sendBtn = document.getElementById("sendBtn");
@@ -457,6 +463,55 @@
     shotEmpty.hidden = true;
     document.getElementById("cameraLabel").textContent = "Ta nytt bilde";
     updateSendState();
+    readAmountFromReceipt(f);
+  }
+
+  // Sender kvitteringsbildet til /api/read-receipt (OCR.space) og fyller inn
+  // beløpet den gjetter på. Dette er en hjelp, ikke en fasit — feltet er
+  // fortsatt fritt redigerbart, og feiler OCR-et sier vi ifra i stedet for
+  // å late som ingenting skjedde.
+  var ocrToken = 0;
+  async function readAmountFromReceipt(file) {
+    var myToken = ++ocrToken;
+    amountWrap.classList.add("ocr-loading");
+    var spinner = document.createElement("span");
+    spinner.className = "ocr-spinner";
+    amountWrap.insertBefore(spinner, amountWrap.firstChild);
+    try {
+      var forOcr = await compressImage(file, 1500, 0.6, 8000);
+      var base64 = await fileToBase64(forOcr);
+      var res = await fetch("/api/read-receipt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-secret": settings.secret || ""
+        },
+        body: JSON.stringify({ imageBase64: base64 })
+      });
+      if (myToken !== ocrToken) return; // et nytt bilde er valgt i mellomtiden
+      if (res.ok) {
+        var data = await res.json();
+        if (data.amount) {
+          amountInput.value = data.amount.replace(",", ".");
+          updateSendState();
+          showToast("Beløp lest automatisk (" + data.amount + " kr) — sjekk at det stemmer.");
+        } else {
+          showToast("Fant ikke beløpet automatisk — skriv det inn manuelt.");
+        }
+      } else if (res.status === 500) {
+        // OCR_SPACE_API_KEY ikke satt opp ennå på serveren — ikke plag brukeren hver gang.
+      } else {
+        showToast("Kunne ikke lese kvitteringen automatisk — skriv beløpet inn manuelt.");
+      }
+    } catch (e) {
+      if (myToken !== ocrToken) return;
+      showToast("Kunne ikke lese kvitteringen automatisk — skriv beløpet inn manuelt.");
+    } finally {
+      if (myToken === ocrToken) {
+        amountWrap.classList.remove("ocr-loading");
+        if (spinner.parentNode) spinner.parentNode.removeChild(spinner);
+      }
+    }
   }
 
   cameraInput.addEventListener("change", function () { handleFile(this.files); });
